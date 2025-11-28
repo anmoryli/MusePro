@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MuseFlow AI - AI音乐创作平台</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- Header -->
+<header id="header">
+    <div class="container header-content">
+        <div class="logo" onclick="APP.navigateTo('home')" style="cursor: pointer;">
+            <span style="font-size: 28px; font-weight: bold;">🎵</span>
+            <span>MuseFlow AI</span>
+        </div>
+        <nav id="mainNav">
+            <a href="javascript:void(0)" onclick="APP.navigateTo('home')">首页</a>
+            <a href="javascript:void(0)" onclick="APP.navigateTo('create')">AI创作</a>
+            <a href="javascript:void(0)" onclick="APP.navigateTo('works')">我的作品</a>
+            <a href="javascript:void(0)" onclick="APP.navigateTo('midi')">MIDI工作室</a>
+            <a href="javascript:void(0)" onclick="APP.navigateTo('community')">社区</a>
+            <a href="javascript:void(0)" onclick="APP.navigateTo('profile')">个人中心</a>
+        </nav>
+        <div class="user-actions" id="userActions">
+            <button class="btn-secondary" onclick="APP.showModal('loginModal')">登录</button>
+            <button class="btn-primary" onclick="APP.showModal('registerModal')">注册</button>
+        </div>
+        <div class="user-info" id="userInfo" style="display: none;">
+            <span id="userCredits">30首</span>
+            <img id="userAvatar" src="/placeholder.svg" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+            <span id="userNickname">音乐人</span>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main id="mainContent"></main>
+
+<!-- Audio Player -->
+<div id="audioPlayer" class="audio-player" style="display: none;">
+    <div class="player-content">
+        <div class="player-info">
+            <div id="playerCover" class="player-cover-container">
+                <img id="playerCoverImg" src="/placeholder.svg" alt="Cover" style="display: none;">
+                <div id="playerCoverText" class="player-cover-text">🎵</div>
+            </div>
+            <div class="player-text">
+                <div id="playerTitle">歌曲名称</div>
+                <div id="playerArtist">艺术家</div>
+            </div>
+        </div>
+        <div class="player-controls">
+            <button class="control-btn" onclick="APP.previousTrack()" title="上一首">⏮</button>
+            <button class="control-btn" id="playPauseBtn" onclick="APP.togglePlayPause()" title="播放/暂停">▶</button>
+            <button class="control-btn" onclick="APP.nextTrack()" title="下一首">⏭</button>
+            <button class="control-btn" id="lyricsBtn" onclick="APP.toggleLyrics()" title="显示歌词">📄</button>
+        </div>
+        <div class="player-progress">
+            <span id="currentTime">0:00</span>
+            <input type="range" id="progressBar" min="0" max="100" value="0" oninput="APP.seekTo(this.value)">
+            <span id="totalTime">0:00</span>
+        </div>
+        <div class="player-volume">
+            <span>🔊</span>
+            <input type="range" id="volumeControl" min="0" max="100" value="80" oninput="APP.setVolume(this.value)">
+            <button class="control-btn" onclick="APP.downloadCurrentSong()" title="下载">⬇</button>
+            <button class="control-btn" onclick="APP.closePlayer()" title="关闭">✕</button>
+        </div>
+    </div>
+    <div id="lyricsPanel" class="lyrics-panel" style="display: none;">
+        <div class="lyrics-content" id="lyricsContent">暂无歌词</div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="APP.closeModal('loginModal')">&times;</span>
+        <h2>登录</h2>
+        <form id="loginForm" onsubmit="APP.handleLogin(event)">
+            <input type="email" placeholder="邮箱" id="loginEmail" required>
+            <input type="password" placeholder="密码" id="loginPassword" required>
+            <button type="submit" class="btn-primary">登录</button>
+        </form>
+    </div>
+</div>
+
+<div id="registerModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="APP.closeModal('registerModal')">&times;</span>
+        <h2>注册</h2>
+        <form id="registerForm" onsubmit="APP.handleRegister(event)">
+            <input type="text" placeholder="昵称" id="registerNickname" required>
+            <input type="email" placeholder="邮箱" id="registerEmail" required>
+            <input type="password" placeholder="密码" id="registerPassword" required>
+            <button type="submit" class="btn-primary">注册</button>
+        </form>
+    </div>
+</div>
+
+<div id="midiModal" class="modal">
+    <div class="modal-content modal-large">
+        <span class="close" onclick="APP.closeMidiModal()">&times;</span>
+        <h2>MIDI预览</h2>
+        <div class="midi-viewer">
+            <div class="midi-canvas-container">
+                <canvas id="midiCanvas" width="2400" height="400"></canvas>
+            </div>
+            <div class="midi-controls">
+                <button class="btn-primary" id="midiPlayBtn" onclick="APP.toggleMidiPlayback()">播放MIDI</button>
+                <input type="range" id="midiProgress" min="0" max="100" value="0" oninput="APP.seekMidi(this.value)">
+                <span id="midiTime">0:00 / 0:00</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<audio id="audioElement"></audio>
+
+<script src="script.js"></script>
+</body>
+</html>

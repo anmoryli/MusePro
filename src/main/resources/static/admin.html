@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员控制台 - AI Music Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "STZhongsong", "华文中宋", "Times New Roman", serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: rgba(25, 25, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(25, 25, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: #b0b0b0;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            color: #4caf50;
+        }
+
+        .stat-change.negative {
+            color: #f44336;
+        }
+
+        .chart-section {
+            background: rgba(25, 25, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-header h2 {
+            font-size: 1.5rem;
+            color: #ffffff;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-tab {
+            padding: 0.5rem 1rem;
+            background: rgba(15, 15, 15, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #b0b0b0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .chart-tab.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            position: relative;
+        }
+
+        .table-section {
+            background: rgba(25, 25, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .table-section h2 {
+            font-size: 1.5rem;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(15, 15, 15, 0.5);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            color: #b0b0b0;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #667eea;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #f44336;
+            margin-bottom: 1rem;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>管理员控制台</h1>
+        <p>平台数据可视化与分析</p>
+    </div>
+
+    <div id="errorContainer"></div>
+
+    <div class="stats-grid" id="overviewStats">
+        <div class="stat-card">
+            <h3>总用户数</h3>
+            <div class="stat-value" id="totalUsers">-</div>
+            <div class="stat-change" id="todayRegister">今日新增: -</div>
+        </div>
+        <div class="stat-card">
+            <h3>VIP用户</h3>
+            <div class="stat-value" id="vipUsers">-</div>
+            <div class="stat-change">占比: <span id="vipRate">-</span></div>
+        </div>
+        <div class="stat-card">
+            <h3>总歌曲数</h3>
+            <div class="stat-value" id="totalSongs">-</div>
+            <div class="stat-change" id="todaySongs">今日生成: -</div>
+        </div>
+        <div class="stat-card">
+            <h3>总播放量</h3>
+            <div class="stat-value" id="totalPlayCount">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>总点赞数</h3>
+            <div class="stat-value" id="totalLikeCount">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>用户活跃度</h3>
+            <div class="stat-value" id="activeRate">-</div>
+            <div class="stat-change">人均歌曲: <span id="avgSongs">-</span></div>
+        </div>
+        <div class="stat-card">
+            <h3>已消耗额度</h3>
+            <div class="stat-value" id="totalCredits">-</div>
+        </div>
+    </div>
+
+    <div class="chart-section">
+        <div class="chart-header">
+            <h2>平台增长趋势</h2>
+            <div class="chart-tabs">
+                <div class="chart-tab active" data-days="7">7天</div>
+                <div class="chart-tab" data-days="30">30天</div>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="chart-section">
+            <h2>VIP用户分布</h2>
+            <div class="chart-container" style="height: 250px;">
+                <canvas id="vipChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2>用户活跃度</h2>
+            <div class="chart-container" style="height: 250px;">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-section">
+        <h2>热门歌曲 TOP 10</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>排名</th>
+                <th>歌曲标题</th>
+                <th>标签</th>
+                <th>播放量</th>
+                <th>点赞数</th>
+                <th>完成时间</th>
+            </tr>
+            </thead>
+            <!-- 重点：id 直接写在 tbody 上！ -->
+            <tbody id="topSongsTable">
+            <tr><td colspan="6" class="loading">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const BASE_URL = "http://175.24.205.213:8102"
+
+    let trendChart = null
+    let vipChart = null
+    let activityChart = null
+
+    function showError(message) {
+        const container = document.getElementById('errorContainer')
+        container.innerHTML = `<div class="error">错误: ${message}</div>`
+        setTimeout(() => container.innerHTML = '', 5000)
+    }
+
+    // 所有函数保持不变，只改 loadTopSongs 里的这句！
+    async function loadTopSongs() {
+        // 正确写法：直接找 id 为 topSongsTable 的 tbody
+        const tbody = document.getElementById('topSongsTable')
+        if (!tbody) {
+            console.error('致命错误：找不到 #topSongsTable')
+            showError('页面加载异常，请刷新')
+            return
+        }
+
+        try {
+            const res = await fetch(`${BASE_URL}/api/admin/stats/top-songs`)
+            const result = await res.json()
+
+            if (result.code === 200 && Array.isArray(result.data) && result.data.length > 0) {
+                tbody.innerHTML = result.data.map((song, i) => {
+                    const dateField = song.finishedAt || song.finished_at || song.createdAt || song.created_at || ''
+                    let dateStr = '-'
+                    if (dateField) {
+                        try {
+                            dateStr = new Date(dateField).toLocaleString('zh-CN', {
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit'
+                            }).replace(/\//g, '-')
+                        } catch (e) { }
+                    }
+
+                    return `
+                        <tr>
+                            <td><strong>${i + 1}</strong></td>
+                            <td>${song.title || '无标题'}</td>
+                            <td>${song.tags || '-'}</td>
+                            <td>${song.playCount || song.play_count || 0}</td>
+                            <td>${song.likeCount || song.like_count || 0}</td>
+                            <td>${dateStr}</td>
+                        </tr>
+                    `
+                }).join('')
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">暂无数据</td></tr>'
+            }
+        } catch (e) {
+            console.error('热门歌曲加载失败:', e)
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f44;">加载失败</td></tr>'
+        }
+    }
+
+    // 其他所有函数（loadOverview、loadTrend、renderTrendChart 等）完全保持不变
+    // 为了节省篇幅，这里省略，但你可以直接从你原来的代码复制过来
+    // 只要确保 loadTopSongs 里用的是 document.getElementById('topSongsTable')
+
+    async function loadOverview() {
+        try {
+            const res = await fetch(`${BASE_URL}/api/admin/stats/overview`)
+            const result = await res.json()
+            if (result.code === 200) {
+                const d = result.data || {}
+                document.getElementById('totalUsers').textContent = d.totalUsers || 0
+                document.getElementById('vipUsers').textContent = d.vipUsers || 0
+                document.getElementById('totalSongs').textContent = d.totalSongs || 0
+                document.getElementById('totalPlayCount').textContent = d.totalPlayCount || 0
+                document.getElementById('totalLikeCount').textContent = d.totalLikeCount || 0
+                document.getElementById('todayRegister').textContent = `今日新增: ${d.todayRegister || 0}`
+                document.getElementById('todaySongs').textContent = `今日生成: ${d.todaySongs || 0}`
+                document.getElementById('activeRate').textContent = d.activeRate || '0%'
+                document.getElementById('avgSongs').textContent = d.avgSongsPerUser || 0
+                document.getElementById('totalCredits').textContent = d.totalCreditsUsed || 0
+
+                const rate = d.totalUsers > 0 ? ((d.vipUsers / d.totalUsers) * 100).toFixed(1) + '%' : '0%'
+                document.getElementById('vipRate').textContent = rate
+            }
+        } catch (e) {
+            console.error('Overview load failed:', e)
+            showError('加载总览数据失败')
+        }
+    }
+
+    async function loadTrend(days = 7) {
+        try {
+            document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'))
+            document.querySelector(`.chart-tab[data-days="${days}"]`).classList.add('active')
+
+            const res = await fetch(`${BASE_URL}/api/admin/stats/trend?days=${days}`)
+            const result = await res.json()
+
+            if (result.code === 200) {
+                const d = result.data || { dates: [], register: [], generate: [] }
+                renderTrendChart(d.dates || [], d.register || [], d.generate || [])
+            }
+        } catch (e) {
+            console.error('Trend load failed:', e)
+            showError('加载趋势数据失败')
+        }
+    }
+
+    function renderTrendChart(dates, registerData, generateData) {
+        const ctx = document.getElementById('trendChart').getContext('2d')
+        if (trendChart) trendChart.destroy()
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    { label: '注册用户', data: registerData, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,0.1)', tension: 0.4, fill: true },
+                    { label: '生成歌曲', data: generateData, borderColor: '#764ba2', backgroundColor: 'rgba(118,75,162,0.1)', tension: 0.4, fill: true }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#e0e0e0' } } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#b0b0b0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { ticks: { color: '#b0b0b0' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        })
+    }
+
+    async function loadVipStats() {
+        try {
+            const res = await fetch(`${BASE_URL}/api/admin/stats/vip`)
+            const result = await res.json()
+            if (result.code === 200) {
+                const d = result.data || {}
+                renderVipChart(d)
+            }
+        } catch (e) {
+            console.error('VIP stats failed:', e)
+            showError('加载VIP数据失败')
+        }
+    }
+
+    function renderVipChart(data) {
+        const ctx = document.getElementById('vipChart').getContext('2d')
+        if (vipChart) vipChart.destroy()
+
+        vipChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['月度VIP', '年度VIP', '终身VIP', '7天内到期'],
+                datasets: [{
+                    data: [data.monthlyVip || 0, data.yearlyVip || 0, data.lifetimeVip || 0, data.expiringSoon || 0],
+                    backgroundColor: ['rgba(102,126,234,0.8)', 'rgba(118,75,162,0.8)', 'rgba(255,193,7,0.8)', 'rgba(244,67,54,0.8)'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: '#e0e0e0', padding: 15 } } }
+            }
+        })
+    }
+
+    async function loadUserActivity() {
+        try {
+            const res = await fetch(`${BASE_URL}/api/admin/stats/user-activity`)
+            const result = await res.json()
+            if (result.code === 200 && Array.isArray(result.data)) {
+                renderActivityChart(result.data)
+            }
+        } catch (e) {
+            console.error('User activity failed:', e)
+            showError('加载用户活跃度失败')
+        }
+    }
+
+    function renderActivityChart(data) {
+        const ctx = document.getElementById('activityChart').getContext('2d')
+        if (activityChart) activityChart.destroy()
+
+        const top10 = data.slice(0, 10)
+        const labels = top10.map((item, i) => item.nickname || item.nick_name || `用户${item.userId || item.user_id || i + 1}`)
+        const counts = top10.map(item => item.songCount || item.song_count || item.count || 0)
+
+        activityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '生成歌曲数',
+                    data: counts,
+                    backgroundColor: 'rgba(102,126,234,0.8)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: '#888' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                    x: { ticks: { color: '#888' }, grid: { display: false } }
+                }
+            }
+        })
+    }
+
+    // 切换趋势图
+    document.querySelectorAll('.chart-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const days = tab.getAttribute('data-days')
+            loadTrend(parseInt(days))
+        })
+    })
+
+    // 初始化
+    async function init() {
+        console.log('[Admin] 开始初始化...')
+        await loadOverview()
+        await loadTrend(7)
+        await loadVipStats()
+        await loadUserActivity()
+        await loadTopSongs()
+        console.log('[Admin] 控制台加载完成')
+    }
+
+    // 绝对保险：DOM 完全加载后再执行
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('[Admin] DOM 已就绪，初始化启动')
+        init()
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: MusePro
+
+  datasource:
+    url: jdbc:mysql://175.24.205.213:3306/muse_pro?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    username: username
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 500MB   # max request size
+      enabled: true
+yunwu:
+  api:
+    key: ${YUNWU_API_KEY}
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+server:
+  port: 8102
