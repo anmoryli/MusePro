@@ -33,7 +33,7 @@ public class SongsController {
                                            @RequestParam String title,
                                            @RequestParam String prompt,
                                            @RequestParam(required = false) String mv,
-                                           @RequestParam(required = false) Boolean instrumental) {
+                                           @RequestParam(required = false) Boolean instrumental) throws Exception {
         return songsService.inspiration(userId, title, prompt, mv, instrumental);
     }
 
@@ -43,7 +43,7 @@ public class SongsController {
                                       @RequestParam String prompt,
                                       @RequestParam(required = false) String tags,
                                       @RequestParam(required = false) String mv,
-                                      @RequestParam(required = false) Boolean instrumental) {
+                                      @RequestParam(required = false) Boolean instrumental) throws Exception {
         return songsService.custom(userId, title, prompt, tags, mv, instrumental);
     }
 
@@ -52,7 +52,7 @@ public class SongsController {
                                       @RequestParam String continueClipId,
                                       @RequestParam BigDecimal continueAt,
                                       @RequestParam(required = false) String mv,
-                                      @RequestParam String taskId) {
+                                      @RequestParam String taskId) throws Exception {
         return songsService.extend(userId, continueClipId, continueAt, mv,taskId);
     }
 
@@ -62,7 +62,7 @@ public class SongsController {
                                       @RequestParam String prompt,
                                       @RequestParam String personaId,
                                       @RequestParam String artistClipId,
-                                      @RequestParam(required = false) String mv) {
+                                      @RequestParam(required = false) String mv) throws Exception {
         return songsService.artistStyle(userId, title, prompt, personaId, artistClipId, mv);
     }
 

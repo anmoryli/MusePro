@@ -93,4 +93,7 @@ public interface UsersMapper {
 
     @Select("SELECT COUNT(*) FROM users")
     int countAllUsers();
+
+    @Select("SELECT nickname FROM users WHERE user_id = #{userId}")
+    String getNicknameById(Integer userId);
 }

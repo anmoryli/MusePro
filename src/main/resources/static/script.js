@@ -84,7 +84,6 @@ const ARTISTS = [
         image: "/public/alan.jpg",
     },
 ]
-
 // ====================== 全局 Loading + Toast 系统（高级感拉满）======================
 
 // 1. 创建 loading 元素（只创建一次）
@@ -291,16 +290,71 @@ const APP = {
     init() {
         this.audioElement = document.getElementById("audioElement")
         this.checkAutoLogin()
+        this.updateUserUI()
         this.navigateTo("home")
         this.setupAudioListeners()
     },
 
-    // ==================== 用户认证 ====================
+    formatTimeAgo(dateString) {
+    if (!dateString) return "刚刚";
+    const diff = Date.now() - new Date(dateString).getTime();
+    const m = Math.floor(diff / 60000);
+    const h = Math.floor(diff / 3600000);
+    const d = Math.floor(diff / 86400000);
+    if (m < 1) return "刚刚";
+    if (m < 60) return `${m}分钟前`;
+    if (h < 24) return `${h}小时前`;
+    if (d < 7) return `${d}天前`;
+    return new Date(dateString).toLocaleDateString("zh-CN");
+},
+
+
+// ==================== 用户认证 ====================
     checkAutoLogin() {
         const userData = localStorage.getItem("museflow_user")
         if (userData) {
             this.currentUser = JSON.parse(userData)
             this.updateUserUI()
+        }
+    },
+
+    // ==================== 用户登录（你之前漏掉的）===================
+    async handleLogin(event) {
+        event.preventDefault();
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+        if (!email || !password) {
+            showToast("请填写邮箱和密码");
+            return;
+        }
+
+        showGlobalLoading("登录中...");
+
+        try {
+            const response = await fetch(`${CONFIG.BASE_URL}/api/users/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+            hideGlobalLoading();
+
+            if (data.code === 200) {
+                this.currentUser = data.data;
+                localStorage.setItem("museflow_user", JSON.stringify(this.currentUser));
+                this.updateUserUI();
+                this.closeModal("loginModal");
+                showToast(`欢迎回来，${this.currentUser.nickname || "音乐人"}！`);
+                this.navigateTo("home");
+            } else {
+                showToast(data.msg || "邮箱或密码错误");
+            }
+        } catch (error) {
+            hideGlobalLoading();
+            console.error("登录失败:", error);
+            showToast("网络错误，请稍后重试");
         }
     },
 
@@ -679,14 +733,14 @@ const APP = {
                       <div class="vip-plans">
                           <div class="vip-plan">
                               <h3>月度会员</h3>
-                              <div class="vip-price">¥29</div>
+                              <div class="vip-price">$19</div>
                               <p class="vip-period">每月</p>
                               <button class="btn-primary" onclick="APP.purchaseVIP('monthly')">立即购买</button>
                           </div>
                           <div class="vip-plan">
                               <h3>年度会员</h3>
-                              <div class="vip-price">¥288</div>
-                              <p class="vip-period">每年（省¥60）</p>
+                              <div class="vip-price">$199</div>
+                              <p class="vip-period">每年（省$60）</p>
                               <button class="btn-primary" onclick="APP.purchaseVIP('yearly')">立即购买</button>
                           </div>
                       </div>
@@ -1790,52 +1844,57 @@ const APP = {
     },
 
     renderCommunityCard(song) {
-        const statusClass = `status-${song.status || "pending"}`
-        const statusText =
-            {
-                pending: "等待中",
-                generating: "生成中",
-                completed: "已完成",
-                failed: "失败",
-            }[song.status] || "未知"
-
         const coverHtml = song.coverImage
-            ? `<img src="${song.coverImage}" alt="${song.title}" class="work-cover" onerror="this.outerHTML='<div class=\\'work-cover-placeholder\\'>${song.title?.substring(0, 2) || "🎵"}</div>'">`
-            : `<div class="work-cover-placeholder">${song.title?.substring(0, 2) || "🎵"}</div>`
+            ? `<img src="${song.coverImage}" alt="${song.title}" class="work-cover" onerror="this.outerHTML='<div class=\\'work-cover-placeholder\\'>${song.title?.substring(0, 2) || "Music"}</div>'">`
+            : `<div class="work-cover-placeholder">${song.title?.substring(0, 2) || "Music"}</div>`;
 
-        const publicButton =
-            song.status === "completed"
-                ? `<button onclick="APP.togglePublic('${song.clipId}', ${song.isPublic})">${song.isPublic === 1 ? "设为私密" : "设为公开"}</button>`
-                : ""
+        // 直接在这儿异步取名字，但用一个临时占位，等名字回来再替换
+        const authorId = `author-${song.clipId}`;
+
+        // 立刻返回一个“加载中”的名字，1秒内肯定能加载出来
+        setTimeout(() => {
+            if (song.userId) {
+                fetch(`${CONFIG.BASE_URL}/api/users/getNicknameById?userId=${song.userId}`)
+                    .then(r => r.text())
+                    .then(name => {
+                        const el = document.getElementById(authorId);
+                        if (el) el.textContent = name || "神秘音乐人";
+                    })
+                    .catch(() => {
+                        const el = document.getElementById(authorId);
+                        if (el) el.textContent = "神秘音乐人";
+                    });
+            }
+        }, 0);
 
         return `
-          <div class="work-card" onclick="APP.navigateTo('song-detail', {songId: '${song.clipId}'})">
-              ${coverHtml}
-              <div class="work-info">
-                  <h3 class="work-title">${song.title || "未命名"}</h3>
-                  <p class="work-tags">${song.tags || "AI生成"}</p>
-                  <div class="work-stats">
-                      <span>▶ ${song.playCount || 0}</span>
-                      <span>❤ ${song.likeCount || 0}</span>
-                      <span class="status-badge ${statusClass}">${statusText}</span>
-                  </div>
-                  ${
-            song.status === "completed"
-                ? `
-                  <div class="work-actions" onclick="event.stopPropagation()">
-                      <button onclick="APP.playSong('${song.clipId}')">播放</button>
-                      <button onclick="APP.downloadSong('${song.clipId}')">下载</button>
-                      <button onclick="APP.likeSong('${song.clipId}')">点赞</button>
-<!--                      ${publicButton}-->
-                      ${song.midiUrl ? `<button onclick="APP.previewMidi('${song.clipId}')">MIDI</button>` : `<button onclick="APP.convertToMidi('${song.clipId}')">转MIDI</button>`}
-                      <button onclick="APP.deleteSong('${song.clipId}')">删除</button>
-                  </div>
-                  `
-                : ""
-        }
-              </div>
+      <div class="work-card community-card" onclick="APP.navigateTo('song-detail', {songId: '${song.clipId}'})">
+          <!-- 作者信息 -->
+          <div class="community-author">
+              <img src="/placeholder.svg" class="author-avatar">
+              <span class="author-name" id="${authorId}">加载中...</span>
+              <span class="post-time">${this.formatTimeAgo(song.createdAt)}</span>
           </div>
-      `
+
+          ${coverHtml}
+          <div class="work-info">
+              <h3 class="work-title">${song.title || "未命名"}</h3>
+              <p class="work-tags">${song.tags || "AI生成"}</p>
+              <div class="work-stats">
+                  <span>Play ${song.playCount || 0}</span>
+                  <span>Like ${song.likeCount || 0}</span>
+              </div>
+
+              ${song.status === "completed" ? `
+              <div class="work-actions" onclick="event.stopPropagation()">
+                  <button onclick="APP.playSong('${song.clipId}')">播放</button>
+                  <button onclick="APP.downloadSong('${song.clipId}')">下载</button>
+                  <button onclick="APP.likeSong('${song.clipId}')">Like</button>
+                  ${song.midiUrl ? `<button onclick="APP.previewMidi('${song.clipId}')">MIDI</button>` : ''}
+              </div>` : ''}
+          </div>
+      </div>
+    `;
     },
 
     // ==================== 创作处理 ====================
@@ -1991,42 +2050,57 @@ const APP = {
         })
     },
 
+    // ==================== 终极修复版 playSong（支持社区无缝切歌）===================
     async playSong(clipId) {
         try {
-            let song = null
+            // 1. 先查我的作品（优先）
+            let allSongs = []
+            let foundSong = null
+            let source = "" // "my" 或 "community"
 
-            // Try user's songs first
-            const myResponse = await fetch(`${CONFIG.BASE_URL}/api/songs/my?userId=${this.currentUser.userId}`)
-            const myData = await myResponse.json()
-
-            if (myData.code === 200) {
-                song = myData.data.find((s) => s.clipId === clipId)
-                if (song && song.audioUrl) {
-                    this.playlist = myData.data.filter((s) => s.audioUrl)
-                    this.currentTrackIndex = this.playlist.findIndex((s) => s.clipId === clipId)
-                    this.loadTrack(this.currentTrackIndex)
-
-                    // Increment play count
-                    fetch(`${CONFIG.BASE_URL}/api/songs/manage/play?clipId=${clipId}`, { method: "POST" })
-                    return
+            if (this.currentUser) {
+                const myRes = await fetch(`${CONFIG.BASE_URL}/api/songs/my?userId=${this.currentUser.userId}`)
+                const myData = await myRes.json()
+                if (myData.code === 200 && myData.data) {
+                    allSongs.push(...myData.data.filter(s => s.audioUrl))
+                    foundSong = allSongs.find(s => s.clipId === clipId)
+                    if (foundSong) source = "my"
                 }
             }
 
-            // If not found in user songs, try community
-            const communityResponse = await fetch(`${CONFIG.BASE_URL}/api/songs/all`)
-            const communityData = await communityResponse.json()
-
-            if (communityData.code === 200) {
-                song = communityData.data.find((s) => s.clipId === clipId)
-                if (song && song.audioUrl) {
-                    this.playlist = [song]
-                    this.currentTrackIndex = 0
-                    this.loadTrack(0)
-
-                    // Increment play count
-                    fetch(`${CONFIG.BASE_URL}/api/songs/manage/play?clipId=${clipId}`, { method: "POST" })
+            // 2. 没找到再查社区公开歌曲
+            if (!foundSong) {
+                const commRes = await fetch(`${CONFIG.BASE_URL}/api/songs/all`)
+                const commData = await commRes.json()
+                if (commData.code === 200 && commData.data) {
+                    const publicSongs = commData.data.filter(s => s.isPublic === 1 && s.audioUrl)
+                    allSongs.push(...publicSongs)
+                    foundSong = publicSongs.find(s => s.clipId === clipId)
+                    if (foundSong) source = "community"
                 }
             }
+
+            if (!foundSong || !foundSong.audioUrl) {
+                showToast("这首歌暂时无法播放")
+                return
+            }
+
+            // 关键来了：把所有能播的歌都塞进播放列表！
+            this.playlist = allSongs
+            this.currentTrackIndex = allSongs.findIndex(s => s.clipId === clipId)
+
+            // 加载并播放
+            this.loadTrack(this.currentTrackIndex)
+
+            // 增加播放量
+            fetch(`${CONFIG.BASE_URL}/api/songs/manage/play?clipId=${clipId}`, { method: "POST" })
+
+            showToast(
+                source === "my"
+                    ? "正在播放你的作品"
+                    : `正在播放社区作品（第 ${this.currentTrackIndex + 1} 首，共 ${this.playlist.length} 首）`
+            )
+
         } catch (error) {
             console.error("Play song error:", error)
             showToast("播放失败，请重试")

@@ -60,6 +60,7 @@ public class UsersController {
                 "credits", user.getCredits(),
                 "isVip", user.getIsVip()
         ));
+        log.info("用户登录成功：" + user);
         return r;
     }
 
@@ -130,5 +131,11 @@ public class UsersController {
         r.put("code", ok ? 200 : 500);
         r.put("msg", ok ? "更新成功" : "更新失败");
         return r;
+    }
+
+    @RequestMapping("/getNicknameById")
+    public String getNicknameById(Integer userId) {
+        Users user = usersService.getUserById(userId);
+        return user.getNickname();
     }
 }

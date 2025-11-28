@@ -1160,3 +1160,37 @@ input[type="range"]::-moz-range-thumb {
   padding: 0.6rem 1rem;
   font-size: 0.95rem;
 }
+
+.community-author {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 10px;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.85rem;
+  z-index: 2;
+}
+.author-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+.author-name {
+  font-weight: 600;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.post-time {
+  margin-left: auto;
+  opacity: 0.8;
+  font-size: 0.75rem;
+}

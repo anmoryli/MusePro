@@ -307,6 +307,8 @@ public class SongsService {
     }
 
     public List<Songs> getAllSongs() {
+        List<Songs> songs = songsMapper.getAllPublicSongs();
+
         return songsMapper.getAllPublicSongs();
     }
 }
