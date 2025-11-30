@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+skinparam nodesep 50
+skinparam ranksep 40
+skinparam rectangle {
+  BorderStyle solid
+  BorderColor black
+  BackgroundColor white
+}
+
+' 长条型横向流程，一条线香
+
+rectangle "前端应用层\n（React/Vue + WebAudio + Canvas）" as fe #white
+rectangle "API网关层\n（Nginx + Kong/OpenResty）\n请求路由 / 身份认证 / 限流熔断" as gw #white
+rectangle "后端服务层\n（微服务集群）\nAI生成服务 / MIDI处理服务\n用户社区服务 / 文件服务" as be #white
+rectangle "数据存储层\nMySQL / Redis / MinIO / Elasticsearch" as db #white
+rectangle "第三方服务\nAI模型推理 / 支付 / 推送 / 开源MIDI库" as third #white
+
+fe -[bold]-> gw : HTTPS / gRPC
+gw -[bold]-> be
+be -[bold]-> db
+be -[bold]-> third : 调用
+
+@enduml

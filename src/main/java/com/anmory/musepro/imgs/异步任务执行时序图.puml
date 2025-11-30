@@ -1,0 +1,21 @@
+@startuml
+participant "用户浏览器" as User
+participant "前端页面" as FE
+participant "后端服务" as BE
+
+User -> FE : 点击“开始创作”
+FE -> FE : showGlobalLoading("生成中...")
+FE -> BE : POST /api/songs/artist
+activate BE
+BE --> FE : {code:200, taskId:xxx}
+deactivate BE
+FE -> FE : 开始轮询任务状态
+loop 每3秒轮询一次
+    FE -> BE : GET /api/tasks/{taskId}
+    BE --> FE : status="processing"
+end
+FE -> BE : GET /api/tasks/{taskId}
+BE --> FE : status="completed", audioUrl=...
+FE -> FE : hideGlobalLoading()
+FE -> User : showToast("生成成功！")
+@enduml

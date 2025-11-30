@@ -1,0 +1,22 @@
+@startuml
+title Creem 支付安全代理与冷启动流程
+actor 用户
+participant 前端页面
+participant 自建后端
+participant "Creem\n支付平台" as Creem
+participant 浏览器localStorage
+
+用户 -> 前端页面 : 点击“开通VIP”
+前端页面 -> 自建后端 : POST /api/payment/create-checkout\n{userId, plan}
+自建后端 -> Creem : Create Checkout Session\n(正式密钥，服务器安全)
+Creem --> 自建后端 : {checkout_url}
+自建后端 --> 前端页面 : {checkout_url}
+前端页面 -> 用户 : 跳转支付页
+用户 -> Creem : 完成支付
+Creem -> 用户 : 跳转回 https://yoursite.com/?payment=success
+前端页面 -> 自建后端 : POST /api/users/xxx/monthly-vip
+自建后端 --> 前端页面 : {code:200}
+前端页面 -> localStorage : 更新 isVip=true
+前端页面 -> 前端页面 : updateUserUI() 显示VIP标识
+note right: 即使后端宕机\n已VIP用户仍可继续使用
+@enduml

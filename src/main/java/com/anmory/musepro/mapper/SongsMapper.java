@@ -123,4 +123,18 @@ public interface SongsMapper {
 
     @Select("SELECT * FROM songs ORDER BY song_id DESC LIMIT 1")
     Songs getLastSong();
+
+    @Select("SELECT * FROM songs WHERE status = 'generating' ORDER BY created_at ASC LIMIT 20 FOR UPDATE SKIP LOCKED")
+    List<Songs> getGeneratingTasksWithLimit();
+
+    @Select("""
+        SELECT *
+        FROM songs
+        WHERE status = 'generating'
+        AND clip_id IS NULL
+        ORDER BY created_at ASC
+        LIMIT 20
+        """)
+    List<Songs> listPendingTasks();
+
 }

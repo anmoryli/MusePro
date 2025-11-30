@@ -19,7 +19,7 @@ public class MidiConverter {
 
     private static final Logger log = LoggerFactory.getLogger(MidiConverter.class);
 
-    // 用 conda 环境里的 basic-pitch 命令（最稳！）
+    // 用 conda 环境里的 basic-pitch
     private static final String BASIC_PITCH_CMD = "/root/anaconda3/envs/midi/bin/basic-pitch";
 
     // 你的文件目录
